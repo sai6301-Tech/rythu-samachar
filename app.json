@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "rytu-samachar-mobile",
-    "slug": "rytu-samachar-mobile",
+    "name": "Rytu Samachar",
+    "slug": "rytu-samachar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1B5E20"
     },
     "ios": {
       "supportsTablet": true
@@ -30,10 +30,24 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#2E7D32"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6490f1b8-8b9b-4dce-9875-357b12084320"
+      }
+    },
+    "owner": "prasad-032s-organization"
   }
 }

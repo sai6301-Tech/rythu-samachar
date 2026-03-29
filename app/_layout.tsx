@@ -1,23 +1,20 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 
+import { LanguageProvider } from '@/context/LanguageContext';
+import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { useNotificationNavigation } from '@/hooks/useNotificationNavigation';
+import { initializeNotifications } from '@/services/notificationService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/services/firebaseApp';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from 'expo-router';
 
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -25,7 +22,6 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -33,6 +29,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      void initializeNotifications();
     }
   }, [loaded]);
 
@@ -40,17 +37,52 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <LanguageProvider>
+      <RootLayoutNav />
+    </LanguageProvider>
+  );
 }
 
 function RootLayoutNav() {
+  useNotificationNavigation();
   const colorScheme = useColorScheme();
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const primary = scheme === 'dark' ? Colors.dark.tint : Colors.primary;
+  const initialLoad = useRef(true);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      // Skip the very first emission — index.tsx handles initial routing
+      if (initialLoad.current) {
+        initialLoad.current = false;
+        return;
+      }
+      if (!user) {
+        router.replace('/(auth)/login');
+      }
+    });
+    return unsub;
+  }, []);
+
+  const theme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary,
+      card: Colors[scheme].card,
+      background: Colors[scheme].background,
+      text: Colors[scheme].text,
+    },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={theme}>
+      <Stack screenOptions={{ headerTintColor: primary }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );
